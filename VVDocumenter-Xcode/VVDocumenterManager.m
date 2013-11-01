@@ -15,8 +15,9 @@
 #import "VVDocumenterSetting.h"
 
 @interface VVDocumenterManager()
-@property (nonatomic, retain) id eventMonitor;
+@property (nonatomic, strong) id eventMonitor;
 @property (nonatomic, assign) BOOL prefixTyped;
+@property (nonatomic, strong) VVDSettingPanelWindowController *settingPanel;
 @end
 
 @implementation VVDocumenterManager
@@ -62,13 +63,12 @@
         
         [newMenuItem setTarget:self];
         [[editMenuItem submenu] addItem:newMenuItem];
-        [newMenuItem release];
     }
 }
 
 -(void) showSettingPanel:(NSNotification *)noti {
-    VVDSettingPanelWindowController *panelController = [[VVDSettingPanelWindowController alloc] initWithWindowNibName:@"VVDSettingPanelWindowController"];
-    [panelController showWindow:panelController];
+    self.settingPanel = [[VVDSettingPanelWindowController alloc] initWithWindowNibName:@"VVDSettingPanelWindowController"];
+    [self.settingPanel showWindow:self.settingPanel];
 }
 
 - (void) textStorageDidChange:(NSNotification *)noti {
@@ -90,6 +90,20 @@
             }
             
             if ([currentLineResult.string vv_matchesPatternRegexPattern:[NSString stringWithFormat:@"^\\s*%@$",[NSRegularExpression escapedPatternForString:triggerString]]] && self.prefixTyped) {
+                VVTextResult *previousLineResult = [textView textResultOfPreviousLine];
+
+                // Previous line is a documentation comment, so ignore this
+                if ([previousLineResult.string vv_matchesPatternRegexPattern:@"^\\s*///"]) {
+                    return;
+                }
+
+                VVTextResult *nextLineResult = [textView textResultOfNextLine];
+
+                // Next line is a documentation comment, so ignore this
+                if ([nextLineResult.string vv_matchesPatternRegexPattern:@"^\\s*///"]) {
+                    return;
+                }
+                
                 //Get a @"///" (triggerString) typed in by user. Do work!
                 self.prefixTyped = NO;
 
@@ -135,8 +149,9 @@
                 //Cmd+delete Delete current line
                 [kes sendKeyCode:kVK_Delete withModifierCommand:YES alt:NO shift:NO control:NO];
                 //if (shouldReplace) [textView setSelectedRange:resultToDocument.range];
-                //Cmd+V, paste
-                [kes sendKeyCode:kVK_ANSI_V withModifierCommand:YES alt:NO shift:NO control:NO];
+                //Cmd+V, paste (If it is Dvorak layout, use '.', which is corresponding the key 'V' in a QWERTY layout)
+                NSInteger kKeyVCode = [[VVDocumenterSetting defaultSetting] useDvorakLayout] ? kVK_ANSI_Period : kVK_ANSI_V;
+                [kes sendKeyCode:kKeyVCode withModifierCommand:YES alt:NO shift:NO control:NO];
                 
                 //The key down is just a defined finish signal by me. When we receive this key, we know operation above is finished.
                 [kes sendKeyCode:kVK_F20];
@@ -162,7 +177,7 @@
                         
                         //Invalidate the finish signal, in case you set it to do some other thing.
                         return nil;
-                    } else if ([incomingEvent type] == NSKeyDown && [incomingEvent keyCode] == kVK_ANSI_V && shouldReplace == YES) {
+                    } else if ([incomingEvent type] == NSKeyDown && [incomingEvent keyCode] == kKeyVCode && shouldReplace == YES) {
                         //Select input line and the define code block.
                         NSRange r = [textView textResultUntilNextString:@";"].range;
                         

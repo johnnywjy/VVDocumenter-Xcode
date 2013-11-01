@@ -13,6 +13,9 @@ extern NSString *const VVDDefaultTriggerString;
 @interface VVDocumenterSetting : NSObject
 + (VVDocumenterSetting *)defaultSetting;
 
+-(BOOL) useDvorakLayout;
+-(void) setUseDvorakLayout:(BOOL)useDvorak;
+
 -(BOOL) useSpaces;
 -(void) setUseSpaces:(BOOL)useSpace;
 
@@ -25,8 +28,14 @@ extern NSString *const VVDDefaultTriggerString;
 -(BOOL) prefixWithStar;
 -(void) setPrefixWithStar:(BOOL)prefix;
 
+-(BOOL) prefixWithSlashes;
+-(void) setPrefixWithSlashes:(BOOL)prefix;
+
 -(BOOL) addSinceToComments;
 -(void) setAddSinceToComments:(BOOL)add;
+
+-(BOOL) useHeaderDoc;
+-(void) setUseHeaderDoc:(BOOL)use;
 
 -(NSString *) spacesString;
 
